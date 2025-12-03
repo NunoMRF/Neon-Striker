@@ -2,34 +2,37 @@ using UnityEngine;
 
 public class MouseLook : MonoBehaviour
 {
-    public float mouseSensitivity = 120f;
-    public Transform playerBody;
+    public float sensibilidadeX = 120f;
+    public float sensibilidadeY = 120f;
 
-    float xRotation = 0f;
+    public Transform playerBody;   // onde roda no eixo Y (o Player)
 
-    void Start()
-    {
-        // Lock do cursor ao centro e invisível
-        Cursor.lockState = CursorLockMode.Locked;
+    float rotacaoX = 0f;           // emoção vertical da camera
 
-        // Se o playerBody não estiver preenchido, assume o parent
+    private void Start()
+    {        Cursor.lockState = CursorLockMode.Locked;
+        Cursor.visible = false;
+
         if (playerBody == null)
             playerBody = transform.parent;
+
+        // RESETAR rotações iniciais
+        transform.localRotation = Quaternion.identity;
+        playerBody.localRotation = Quaternion.identity;
     }
 
-    void Update()
+    private void Update()
     {
-        // Movimento do rato
-        float mouseX = Input.GetAxis("Mouse X") * mouseSensitivity * Time.deltaTime;
-        float mouseY = Input.GetAxis("Mouse Y") * mouseSensitivity * Time.deltaTime;
+        float mouseX = Input.GetAxis("Mouse X") * sensibilidadeX * Time.deltaTime;
+        float mouseY = Input.GetAxis("Mouse Y") * sensibilidadeY * Time.deltaTime;
 
-        // Movimento da Câmera (olhar para cima/baixo)
-        xRotation -= mouseY;
-        xRotation = Mathf.Clamp(xRotation, -85f, 85f);
+        rotacaoX -= mouseY;
+        rotacaoX = Mathf.Clamp(rotacaoX, -85f, 85f);
 
-        transform.localRotation = Quaternion.Euler(xRotation, 0f, 0f);
+        // Rotação vertical da camera (apenas eixo X)
+        transform.localRotation = Quaternion.Euler(rotacaoX, 0f, 0f);
 
-        // Rodar o corpo do player (esquerda/direita)
+        // Rotação horizontal do Player (apenas Y)
         playerBody.Rotate(Vector3.up * mouseX);
     }
 }
