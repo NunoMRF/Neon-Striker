@@ -31,7 +31,7 @@ public class PlayerMovement : MonoBehaviour
     private Vector3 dashDirection;
 
     [Header("Animação")]
-    [SerializeField] private Animator anim;
+    [SerializeField] public Animator anim; // Mudei para public para facilitar o arrastar no Inspector
 
     void Start()
     {
@@ -79,20 +79,25 @@ public class PlayerMovement : MonoBehaviour
         float z = Input.GetAxis("Vertical");
 
         Vector3 move = transform.right * x + transform.forward * z;
-        
-        
+
         bool hasInput = (new Vector2(x, z).sqrMagnitude > 0.001f);
-
-
 
         bool isRunning = hasInput && Input.GetKey(KeyCode.LeftShift);
 
         float currentSpeed = isRunning ? runSpeed : walkSpeed;
-                controller.Move(move * currentSpeed * Time.deltaTime);
 
+        controller.Move(move * currentSpeed * Time.deltaTime);
+
+        // --- AQUI ESTA A CORREÇÃO PARA A BLEND TREE ---
         if (anim)
-        {            float inputSpeed = new Vector2(x, z).magnitude;
-            anim.SetFloat("Speed", inputSpeed);
+        {
+            // Calcula a intensidade do input (0 a 1)
+            float inputMagnitude = new Vector2(x, z).magnitude;
+
+            // Multiplica pela velocidade real (ex: 1 * 8 = 8) para a Blend Tree saber que estás a correr
+            anim.SetFloat("Speed", inputMagnitude * currentSpeed);
+
+            // (Opcional) Se tiveres lógica de bools no animator
             anim.SetBool("IsRunning", isRunning);
         }
     }
