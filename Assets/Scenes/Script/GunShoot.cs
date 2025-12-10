@@ -8,10 +8,14 @@ public class GunShoot : MonoBehaviour
     public Camera playerCamera;
     public GunRecoil recoil;
 
-    [Header("Tiro")]
+    [Header("Tiro e Dano")]
     public float range = 100f;
     public int damage = 20;
     public float fireRate = 0.15f;
+
+    
+    [Header("Efeitos Visuais")]
+    public GameObject hitEffect;
 
     private float nextTimeToShoot = 0f;
 
@@ -39,15 +43,18 @@ public class GunShoot : MonoBehaviour
         if (isReloading)
             return;
 
-        if (Input.GetKeyDown(KeyCode.R))
+       
+        if (Input.GetKeyDown(KeyCode.R) && currentAmmo < maxAmmo)
         {
             StartCoroutine(Reload());
             return;
         }
 
+       
         if (currentAmmo <= 0)
             return;
 
+        
         if (Input.GetMouseButton(0) && Time.time >= nextTimeToShoot)
         {
             nextTimeToShoot = Time.time + fireRate;
@@ -59,6 +66,7 @@ public class GunShoot : MonoBehaviour
     {
         currentAmmo--;
 
+        
         if (recoil != null)
             recoil.ApplyRecoil();
 
@@ -66,14 +74,28 @@ public class GunShoot : MonoBehaviour
 
         if (Physics.Raycast(playerCamera.transform.position, playerCamera.transform.forward, out hit, range))
         {
-            // Debug de impacto — voltou a estar aqui
             Debug.Log("Atingiste: " + hit.transform.name);
 
-
+            
             VidaScript vida = hit.transform.GetComponent<VidaScript>();
             if (vida != null)
-            
+            {
                 vida.LevarDano(damage);
+            }
+
+            // 2. Tenta tirar vida à Turret (NOVO)
+            TurretHealth turret = hit.transform.GetComponent<TurretHealth>();
+            if (turret != null)
+            {
+                turret.ReceberDano(damage);
+            }
+
+            
+            if (hitEffect != null)
+            {
+                
+                Instantiate(hitEffect, hit.point, Quaternion.LookRotation(hit.normal));
+            }
         }
 
         UpdateAmmoUI();
@@ -82,6 +104,7 @@ public class GunShoot : MonoBehaviour
     IEnumerator Reload()
     {
         isReloading = true;
+        Debug.Log("A recarregar...");
 
         if (reloadText != null)
             reloadText.enabled = true;
