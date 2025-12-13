@@ -5,56 +5,46 @@ public class TurretHealth : MonoBehaviour
     [Header("Resistência")]
     public int vidaMaxima = 50;
     private int vidaAtual;
-    private bool estaMorta = false; // Para não morrer 2 vezes seguidas
 
-    [Header("Efeitos")]
-    public GameObject explosaoVFX;
-    public Animator anim; // O "cérebro" das animações
+    [Header("Efeitos Visuais")]
+    public GameObject explosaoFinalPrefab; // A tua explosão gigante
+
+    [Header("Efeitos Sonoros")]
+    public AudioClip somExplosao; // NOVO: O ficheiro de som (arrasta do WarFX)
 
     void Start()
     {
         vidaAtual = vidaMaxima;
-
-        // Se te esqueceres de arrastar, ele tenta apanhar sozinho
-        if (anim == null)
-            anim = GetComponent<Animator>();
     }
 
     public void ReceberDano(int dano)
     {
-        if (estaMorta) return; 
-
         vidaAtual -= dano;
 
         if (vidaAtual <= 0)
         {
-            IniciarSequenciaDeMorte();
+            Morrer();
         }
     }
 
-    void IniciarSequenciaDeMorte()
+    void Morrer()
     {
-        estaMorta = true;
-        Debug.Log("A destruir Turret...");
+        Debug.Log("CABUM! Torre destruída.");
 
-        
-        if (explosaoVFX != null)
+        // 1. Toca o som da explosão no local onde a torre está
+        // Usamos PlayClipAtPoint porque o objeto vai ser destruído logo a seguir
+        if (somExplosao != null)
         {
-            Instantiate(explosaoVFX, transform.position, transform.rotation);
+            AudioSource.PlayClipAtPoint(somExplosao, transform.position);
         }
 
-        
-        if (anim != null)
+        // 2. Cria a explosão visual (Fogo/Fumo)
+        if (explosaoFinalPrefab != null)
         {
-            
-            anim.Play("Turret_v1_deactivation");
+            Instantiate(explosaoFinalPrefab, transform.position, Quaternion.identity);
         }
 
-        
-        Collider col = GetComponent<Collider>();
-        if (col != null) col.enabled = false;
-
-        
-        Destroy(gameObject, 3f);
+        // 3. Destrói a torre imediatamente
+        Destroy(gameObject);
     }
 }

@@ -8,7 +8,7 @@ public class EnemyTurret : MonoBehaviour
     public Transform firePoint;    // A ponta do canhão 
 
     [Header("Laser")]
-    public LineRenderer laserLine; 
+    public LineRenderer laserLine;
 
     [Header("Configuração de Combate")]
     public float range = 25f;
@@ -16,11 +16,17 @@ public class EnemyTurret : MonoBehaviour
     public float fireRate = 1f;    // Tiros por segundo
     private float fireCountdown = 0f;
 
-    [Header("Munição")]
+    [Header("Munição e Som")]
     public GameObject bulletPrefab;
+    public AudioClip somTiro; // NOVO: O ficheiro de som do tiro
+    private AudioSource audioSource; // NOVO: O componente que toca o som
+
     void Start()
     {
-        if (player == null)
+        // NOVO: Vai buscar o "altifalante" da torre
+        audioSource = GetComponent<AudioSource>();
+
+        if (player == null && GameObject.FindGameObjectWithTag("Player") != null)
             player = GameObject.FindGameObjectWithTag("Player").transform;
 
         // Garante que o laser começa desligado
@@ -47,7 +53,7 @@ public class EnemyTurret : MonoBehaviour
 
     void LockOnTarget()
     {
-        Vector3 dir = player.position - turretHead.position; // Ajustado para usar a posição da cabeça
+        Vector3 dir = player.position - turretHead.position;
         Quaternion lookRotation = Quaternion.LookRotation(dir);
         Vector3 rotation = Quaternion.Lerp(turretHead.rotation, lookRotation, Time.deltaTime * turnSpeed).eulerAngles;
         turretHead.rotation = Quaternion.Euler(0f, rotation.y, 0f);
@@ -76,8 +82,14 @@ public class EnemyTurret : MonoBehaviour
 
     void Shoot()
     {
+        // Cria a bala
         Instantiate(bulletPrefab, firePoint.position, firePoint.rotation);
 
+        // NOVO: Toca o som do tiro
+        if (audioSource != null && somTiro != null)
+        {
+            audioSource.PlayOneShot(somTiro);
+        }
     }
 
     void OnDrawGizmosSelected()

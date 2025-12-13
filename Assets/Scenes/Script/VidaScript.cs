@@ -38,7 +38,7 @@ public class VidaScript : MonoBehaviour
         AtualizarTextoVida();
 
         if (vidaAtual <= 0)
-            Morrer();
+            GameManager.instance.GameOver(); ;
     }
 
     public void Curar(int quantidade)
