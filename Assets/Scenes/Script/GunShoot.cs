@@ -120,14 +120,36 @@ public class GunShoot : MonoBehaviour
         isReloading = true;
         Debug.Log("A recarregar...");
 
+        // Ativa o texto de "Reloading..." se existir
         if (reloadText != null)
             reloadText.enabled = true;
 
+        // --- INÍCIO DA ANIMAÇÃO ---
+
+        // 1. Guarda a posição original da arma para não a perdermos
+        Quaternion anguloOriginal = transform.localRotation;
+
+        // 2. Roda a arma 45 graus para baixo (simula baixar a arma para meter o pente)
+        // Usamos 'localRotation' para ser relativo à câmara
+        transform.localRotation = Quaternion.Euler(20f, 0f, 0f);
+
+        // --------------------------
+
+        // Espera o tempo definido (ex: 1.5 segundos) com a arma em baixo
         yield return new WaitForSeconds(reloadTime);
 
+        // --- FIM DA ANIMAÇÃO ---
+
+        // 3. Volta a pôr a arma na posição de tiro
+        transform.localRotation = anguloOriginal;
+
+        // -----------------------
+
+        // Enche a munição
         currentAmmo = maxAmmo;
         isReloading = false;
 
+        // Esconde o texto
         if (reloadText != null)
             reloadText.enabled = false;
 
