@@ -1,104 +1,154 @@
 using UnityEngine;
-using UnityEngine.AI; // Necessário para o NavMesh
+using UnityEngine.AI;
 
 public class SoldierAI : MonoBehaviour
 {
     [Header("Alvos")]
     public Transform player;
-    public Transform gunPoint; // A ponta da arma do Jones
+    public Transform gunPoint;
 
-    [Header("Configuração")]
-    public float shootingRange = 15f; // Distância para começar a disparar
-    public float fireRate = 1f;
-    private float nextFireTime = 0f;
+    [Header("Referências")]
+    public Animator animator; // O Animator do filho (arrasta aqui)
 
-    [Header("Munição")]
+    [Header("Combate")]
     public GameObject bulletPrefab;
-    public AudioClip shootSound;
-    private AudioSource audioSource;
+    public float fireRate = 1f;
+    private float nextFireTime;
 
-    [Header("Animação")]
-    public Animator animator; // Para controlar correr/parar
+    [Header("Inteligência (AI)")]
+    public float raioDetecao = 15f;   // Distância para ele te ver e atacar (Círculo Vermelho)
+    public float raioPatrulha = 10f;  // Distância que ele anda sozinho (Círculo Verde)
+    public float tempoDeEspera = 3f;  // Tempo parado antes de mudar de sítio
 
-    // O Cérebro de movimento
     private NavMeshAgent agent;
+    private Vector3 pontoInicial; // O "centro" da zona de patrulha dele
+    private float timer;
 
     void Start()
     {
         agent = GetComponent<NavMeshAgent>();
-        audioSource = GetComponent<AudioSource>();
 
+        // Guarda a posição onde ele nasceu como sendo a "casa" dele
+        pontoInicial = transform.position;
+        timer = tempoDeEspera;
+
+        // Tenta encontrar o player automaticamente se não tiveres arrastado
         if (player == null)
-            player = GameObject.FindGameObjectWithTag("Player").transform;
-
-        // Ajusta a velocidade do NavMesh para bater certo com a animação
-        agent.speed = 3.5f;
+        {
+            GameObject p = GameObject.FindGameObjectWithTag("Player");
+            if (p != null)
+            {
+                // Tenta apontar para o peito (AlvoInimigo), senão vai aos pés
+                Transform alvoPeito = p.transform.Find("AlvoInimigo");
+                if (alvoPeito != null) player = alvoPeito;
+                else player = p.transform;
+            }
+        }
     }
 
     void Update()
     {
         if (player == null) return;
 
-        float distance = Vector3.Distance(transform.position, player.position);
+        // 1. Calcular a distância entre Inimigo e Jogador
+        float distanciaAoJogador = Vector3.Distance(transform.position, player.position);
 
-        // --- MÁQUINA DE ESTADOS ---
-
-        if (distance <= shootingRange)
+        // 2. DECISÃO: O jogador está perto?
+        if (distanciaAoJogador <= raioDetecao)
         {
-            // ESTADO: ATACAR
-            StopAndShoot();
+            EstadoAtacar(distanciaAoJogador);
         }
         else
         {
-            // ESTADO: PERSEGUIR
-            ChasePlayer();
+            EstadoPatrulhar();
         }
     }
 
-    void ChasePlayer()
+    // --- COMPORTAMENTO DE ATAQUE ---
+    void EstadoAtacar(float distancia)
     {
-        agent.isStopped = false;
+        // Corre atrás do jogador
         agent.SetDestination(player.position);
 
-        // Ativa a animação de correr (se tiveres um parâmetro "IsRunning")
-        if (animator != null) animator.SetBool("IsRunning", true);
+        // Se estiver perto o suficiente para disparar (ex: 10 metros)
+        if (distancia <= 10f)
+        {
+            agent.isStopped = true; // Pára de andar
+            RotateTowards(player);
+
+            if (animator != null) animator.SetBool("IsRunning", false);
+
+            // Disparar com cadência
+            if (Time.time >= nextFireTime)
+            {
+                if (bulletPrefab != null)
+                    Instantiate(bulletPrefab, gunPoint.position, gunPoint.rotation);
+
+                nextFireTime = Time.time + 1f / fireRate;
+            }
+        }
+        else
+        {
+            agent.isStopped = false; // Continua a correr se o jogador fugir
+            if (animator != null) animator.SetBool("IsRunning", true);
+        }
     }
 
-    void StopAndShoot()
+    // --- COMPORTAMENTO DE PATRULHA ---
+    void EstadoPatrulhar()
     {
-        agent.isStopped = true; // Para de andar
+        agent.isStopped = false;
 
-        // Vira-se para o jogador suavemente
-        Vector3 direction = (player.position - transform.position).normalized;
+        // Verifica se chegou ao ponto de destino da patrulha
+        if (agent.remainingDistance <= agent.stoppingDistance)
+        {
+            // Chegou! Fica parado um bocadinho
+            if (animator != null) animator.SetBool("IsRunning", false);
+
+            timer -= Time.deltaTime;
+            if (timer <= 0)
+            {
+                EscolherNovoPonto();
+                timer = tempoDeEspera;
+            }
+        }
+        else
+        {
+            // Ainda está a caminho do ponto
+            if (animator != null) animator.SetBool("IsRunning", true);
+        }
+    }
+
+    void EscolherNovoPonto()
+    {
+        // Escolhe um ponto aleatório dentro do raio de patrulha
+        Vector3 randomPoint = pontoInicial + Random.insideUnitSphere * raioPatrulha;
+
+        NavMeshHit hit;
+        // Verifica se esse ponto é válido no chão (NavMesh)
+        if (NavMesh.SamplePosition(randomPoint, out hit, 2f, NavMesh.AllAreas))
+        {
+            agent.SetDestination(hit.position);
+        }
+    }
+
+    void RotateTowards(Transform target)
+    {
+        Vector3 direction = (target.position - transform.position).normalized;
         Quaternion lookRotation = Quaternion.LookRotation(new Vector3(direction.x, 0, direction.z));
         transform.rotation = Quaternion.Slerp(transform.rotation, lookRotation, Time.deltaTime * 5f);
-
-        // Desliga a animação de correr
-        if (animator != null) animator.SetBool("IsRunning", false);
-
-        // Dispara
-        if (Time.time >= nextFireTime)
-        {
-            nextFireTime = Time.time + 1f / fireRate;
-            Shoot();
-        }
     }
 
-    void Shoot()
+    // AJUDA VISUAL NO EDITOR
+    void OnDrawGizmosSelected()
     {
-        // Cria a bala
-        if (bulletPrefab != null && gunPoint != null)
-        {
-            Instantiate(bulletPrefab, gunPoint.position, gunPoint.rotation);
-        }
+        // Círculo Vermelho: Distância para te ver
+        Gizmos.color = Color.red;
+        Gizmos.DrawWireSphere(transform.position, raioDetecao);
 
-        // Toca o som
-        if (audioSource != null && shootSound != null)
-        {
-            audioSource.PlayOneShot(shootSound);
-        }
-
-        // Se tiveres animação de tiro (Trigger "Shoot")
-        if (animator != null) animator.SetTrigger("Shoot");
+        // Círculo Verde: Área de patrulha (só mostra certo quando dás Play e o pontoInicial é definido, 
+        // mas aqui mostra relativo à posição atual para ajudar)
+        Gizmos.color = Color.green;
+        Gizmos.DrawWireSphere(transform.position, raioPatrulha);
     }
 }

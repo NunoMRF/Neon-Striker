@@ -4,16 +4,19 @@ using TMPro;
 
 public class VidaScript : MonoBehaviour
 {
-    [Header("Configuração de Tipo")]
-    public bool Jogador = false; // Define se é Player (Game Over) ou Inimigo (Destroy)
+    [Header("Configuraï¿½ï¿½o de Tipo")]
+    public bool Jogador = false; 
 
     [Header("Vida")]
     public int vidaMaxima = 100;
     public int vidaAtual;
 
-    [Header("UI (Só para o Jogador)")]
+    [Header("UI (Sï¿½ para o Jogador)")]
     public Slider barraDeVida;
     public TextMeshProUGUI textoVida;
+
+    [Header("Referï¿½ncias")]
+    public Animator animadorInimigo; 
 
     void Start()
     {
@@ -41,7 +44,7 @@ public class VidaScript : MonoBehaviour
 
         AtualizarTextoVida();
 
-        // Se a vida chegar a zero, chama a função de morrer
+        // Se a vida chegar a zero, chama a funï¿½ï¿½o de morrer
         if (vidaAtual <= 0)
         {
             Morrer();
@@ -69,38 +72,37 @@ public class VidaScript : MonoBehaviour
     {
         if (Jogador)
         {
-            // Lógica do Jogador (Game Over)
-            Debug.Log("O Jogador Morreu!");
-            if (GameManager.instance != null)
-            {
-                GameManager.instance.GameOver();
-            }
+            // ... (Cï¿½digo do jogador igual) ...
+            if (GameManager.instance != null) GameManager.instance.GameOver();
         }
         else
         {
-            // Lógica do Inimigo (Animação + Delay)
-            Debug.Log("Inimigo abatido!");
+            Debug.Log("Morte do inimigo iniciada!");
 
-            // 1. Toca a animação de morte
-            Animator anim = GetComponent<Animator>();
-            if (anim != null)
+            // EM VEZ DE PROCURAR, USAMOS A REFERï¿½NCIA DIRETA:
+            if (animadorInimigo != null)
             {
-                anim.SetTrigger("Die");
+                animadorInimigo.SetTrigger("Die");
+                Debug.Log("Ordem de animaï¿½ï¿½o enviada!");
+            }
+            else
+            {
+                // Tenta procurar como plano B, caso te esqueï¿½as de arrastar
+                Animator animAuto = GetComponentInChildren<Animator>();
+                if (animAuto != null) animAuto.SetTrigger("Die");
             }
 
-            // 2. Desliga o cérebro do soldado (para ele parar de disparar)
+            // ... (Continua a desligar o AI, NavMesh e Rigidbody igual ao que tinhas) ...
             SoldierAI ai = GetComponent<SoldierAI>();
             if (ai != null) ai.enabled = false;
 
-            // 3. Desliga o movimento (NavMesh) para ele não deslizar morto
             UnityEngine.AI.NavMeshAgent agent = GetComponent<UnityEngine.AI.NavMeshAgent>();
             if (agent != null) agent.enabled = false;
 
-            // 4. Desliga o Collider (para as balas não baterem no cadáver)
-            Collider col = GetComponent<Collider>();
-            if (col != null) col.enabled = false;
+            Rigidbody rb = GetComponent<Rigidbody>();
+            if (rb != null) { rb.isKinematic = true; rb.linearVelocity = Vector3.zero; }
 
-            // 5. Destrói o corpo passados 4 segundos (dá tempo de ver a animação)
+            // Destrï¿½i
             Destroy(gameObject, 4f);
         }
     }
