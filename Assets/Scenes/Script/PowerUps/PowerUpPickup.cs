@@ -1,34 +1,30 @@
 using UnityEngine;
-using System.Collections;
 
 public class PowerUpPickup : MonoBehaviour
 {
     public float duration = 10f;
-    public float respawnTime = 20f;
 
     private void OnTriggerEnter(Collider other)
     {
-        if (!other.CompareTag("Player"))
-            return;
-
-        PowerUpController controller = other.GetComponent<PowerUpController>();
-
-        if (controller != null)
+        if (other.CompareTag("Player"))
         {
-            controller.ActivatePowerUp(duration);
+            Debug.Log("Power-up apanhado: DANO x2");
+
+            // DANO
+            GunShoot gun = other.GetComponentInChildren<GunShoot>();
+            if (gun != null)
+            {
+                gun.ActivateDamageBoost(duration);
+            }
+
+            // UI
+            PowerUpController ui = other.GetComponent<PowerUpController>();
+            if (ui != null)
+            {
+                ui.ActivateDamageBoostUI(duration);
+            }
+
+            gameObject.SetActive(false);
         }
-
-        // Inicia o respawn ANTES de desligar
-        StartCoroutine(RespawnRoutine());
-
-        // Desliga o power up (como antes)
-        gameObject.SetActive(false);
-    }
-
-    private IEnumerator RespawnRoutine()
-    {
-        yield return new WaitForSeconds(respawnTime);
-
-        gameObject.SetActive(true);
     }
 }

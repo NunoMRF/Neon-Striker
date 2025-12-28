@@ -13,13 +13,14 @@ public class GunShoot : MonoBehaviour
     public int damage = 20;
     public float fireRate = 0.15f;
 
-    [Header("Efeitos Visuais")]
-    public GameObject hitEffect; // O efeito quando a bala bate na parede/inimigo
+    [Header("Power Up")]
+    private float damageMultiplier = 1f;
+    private Coroutine damageCoroutine;
 
-    // --- NOVO: Variáveis para o Clarão do Tiro ---
-    public GameObject muzzleFlashPrefab; // O efeito do WarFX (RIFLE1)
-    public Transform muzzlePointLocation; // O objeto vazio na ponta da arma
-    // ---------------------------------------------
+    [Header("Efeitos Visuais")]
+    public GameObject hitEffect;
+    public GameObject muzzleFlashPrefab;
+    public Transform muzzlePointLocation;
 
     private float nextTimeToShoot = 0f;
 
@@ -67,19 +68,17 @@ public class GunShoot : MonoBehaviour
     {
         currentAmmo--;
 
-        // --- NOVO: Criar o Muzzle Flash (Clarão) ---
         if (muzzleFlashPrefab != null && muzzlePointLocation != null)
         {
-            // Cria o efeito na ponta da arma
-            GameObject flash = Instantiate(muzzleFlashPrefab, muzzlePointLocation.position, muzzlePointLocation.rotation);
+            GameObject flash = Instantiate(
+                muzzleFlashPrefab,
+                muzzlePointLocation.position,
+                muzzlePointLocation.rotation
+            );
 
-            // (Opcional) Faz o efeito ser "filho" da arma para se mexer com ela se estiveres a andar
             flash.transform.SetParent(muzzlePointLocation);
-
-            // Destrói o efeito passados 0.5 segundos para não encher o jogo de lixo
             Destroy(flash, 0.5f);
         }
-        // -------------------------------------------
 
         if (recoil != null)
             recoil.ApplyRecoil();
@@ -88,24 +87,20 @@ public class GunShoot : MonoBehaviour
 
         if (Physics.Raycast(playerCamera.transform.position, playerCamera.transform.forward, out hit, range))
         {
-            Debug.Log("Atingiste: " + hit.transform.name);
+            int finalDamage = Mathf.RoundToInt(damage * damageMultiplier);
 
-            // Tenta tirar vida a inimigos normais
             VidaScript vida = hit.transform.GetComponent<VidaScript>();
             if (vida != null)
             {
-                vida.LevarDano(damage);
+                vida.LevarDano(finalDamage);
             }
 
-            // Tenta tirar vida à Turret
-            // Usei GetComponentInParent para garantir que acerta mesmo que batas num collider filho
             TurretHealth turret = hit.transform.GetComponentInParent<TurretHealth>();
             if (turret != null)
             {
-                turret.ReceberDano(damage);
+                turret.ReceberDano(finalDamage);
             }
 
-            // Cria o efeito de impacto (onde a bala bateu)
             if (hitEffect != null)
             {
                 Instantiate(hitEffect, hit.point, Quaternion.LookRotation(hit.normal));
@@ -115,41 +110,42 @@ public class GunShoot : MonoBehaviour
         UpdateAmmoUI();
     }
 
+    // ---------------- POWER UP ----------------
+
+    public void ActivateDamageBoost(float duration)
+    {
+        if (damageCoroutine != null)
+            StopCoroutine(damageCoroutine);
+
+        damageCoroutine = StartCoroutine(DamageBoostRoutine(duration));
+    }
+
+    private IEnumerator DamageBoostRoutine(float duration)
+    {
+        damageMultiplier = 2f;
+        yield return new WaitForSeconds(duration);
+        damageMultiplier = 1f;
+    }
+
+    // ------------------------------------------
+
     IEnumerator Reload()
     {
         isReloading = true;
-        Debug.Log("A recarregar...");
 
-        // Ativa o texto de "Reloading..." se existir
         if (reloadText != null)
             reloadText.enabled = true;
 
-        // --- INÍCIO DA ANIMAÇÃO ---
-
-        // 1. Guarda a posição original da arma para não a perdermos
-        Quaternion anguloOriginal = transform.localRotation;
-
-        // 2. Roda a arma 45 graus para baixo (simula baixar a arma para meter o pente)
-        // Usamos 'localRotation' para ser relativo à câmara
+        Quaternion originalRotation = transform.localRotation;
         transform.localRotation = Quaternion.Euler(20f, 0f, 0f);
 
-        // --------------------------
-
-        // Espera o tempo definido (ex: 1.5 segundos) com a arma em baixo
         yield return new WaitForSeconds(reloadTime);
 
-        // --- FIM DA ANIMAÇÃO ---
+        transform.localRotation = originalRotation;
 
-        // 3. Volta a pôr a arma na posição de tiro
-        transform.localRotation = anguloOriginal;
-
-        // -----------------------
-
-        // Enche a munição
         currentAmmo = maxAmmo;
         isReloading = false;
 
-        // Esconde o texto
         if (reloadText != null)
             reloadText.enabled = false;
 
