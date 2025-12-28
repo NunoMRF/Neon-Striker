@@ -30,17 +30,25 @@ public class PlayerMovement : MonoBehaviour
     private float dashCooldownTimer = 0f;
     private Vector3 dashDirection;
 
+    [Header("UI Dash")]
+    public DashUIController dashUI;
+
     [Header("Animação")]
-    [SerializeField] public Animator anim; // Mudei para public para facilitar o arrastar no Inspector
+    public Animator anim;
 
     void Start()
     {
         controller = GetComponent<CharacterController>();
+
         Cursor.lockState = CursorLockMode.Locked;
         Cursor.visible = false;
 
         if (anim == null)
             anim = GetComponentInChildren<Animator>();
+
+        // UI começa pronta
+        if (dashUI != null)
+            dashUI.SetReady();
     }
 
     void Update()
@@ -50,6 +58,7 @@ public class PlayerMovement : MonoBehaviour
         TryJump();
         ApplyGravity();
         DashLogic();
+        UpdateDashUI();
     }
 
     // -------------------------------------------------------------
@@ -63,47 +72,40 @@ public class PlayerMovement : MonoBehaviour
         if (jumpBufferTimer > 0)
             jumpBufferTimer -= Time.deltaTime;
 
-        // dash input
+        // DASH - continua no Ctrl (ou muda depois para E)
         if (Input.GetKeyDown(KeyCode.LeftControl) && dashCooldownTimer <= 0 && !isDashing)
             StartDash();
     }
 
     // -------------------------------------------------------------
-    // MOVIMENTO BASE
+    // MOVIMENTO
     // -------------------------------------------------------------
     void Movement()
     {
-        if (isDashing) return; // dash controla o movimento
+        if (isDashing) return;
 
         float x = Input.GetAxis("Horizontal");
         float z = Input.GetAxis("Vertical");
 
         Vector3 move = transform.right * x + transform.forward * z;
 
-        bool hasInput = (new Vector2(x, z).sqrMagnitude > 0.001f);
-
+        bool hasInput = new Vector2(x, z).sqrMagnitude > 0.001f;
         bool isRunning = hasInput && Input.GetKey(KeyCode.LeftShift);
 
         float currentSpeed = isRunning ? runSpeed : walkSpeed;
 
         controller.Move(move * currentSpeed * Time.deltaTime);
 
-        // --- AQUI ESTA A CORREÇÃO PARA A BLEND TREE ---
         if (anim)
         {
-            // Calcula a intensidade do input (0 a 1)
             float inputMagnitude = new Vector2(x, z).magnitude;
-
-            // Multiplica pela velocidade real (ex: 1 * 8 = 8) para a Blend Tree saber que estás a correr
             anim.SetFloat("Speed", inputMagnitude * currentSpeed);
-
-            // (Opcional) Se tiveres lógica de bools no animator
             anim.SetBool("IsRunning", isRunning);
         }
     }
 
     // -------------------------------------------------------------
-    // SALTO (Coyote Time + Buffer)
+    // SALTO
     // -------------------------------------------------------------
     void TryJump()
     {
@@ -115,7 +117,6 @@ public class PlayerMovement : MonoBehaviour
         if (jumpBufferTimer > 0 && coyoteTimer > 0)
         {
             velocity.y = Mathf.Sqrt(jumpHeight * -2f * gravity);
-
             jumpBufferTimer = 0;
             coyoteTimer = 0;
 
@@ -146,8 +147,7 @@ public class PlayerMovement : MonoBehaviour
         isDashing = true;
         dashTimer = dashDuration;
         dashCooldownTimer = dashCooldown;
-
-        dashDirection = transform.forward; // dash sempre para a direção onde olha
+        dashDirection = transform.forward;
 
         if (anim)
             anim.SetTrigger("Dash");
@@ -165,8 +165,19 @@ public class PlayerMovement : MonoBehaviour
 
         dashTimer -= Time.deltaTime;
         if (dashTimer <= 0)
-        {
             isDashing = false;
-        }
+    }
+
+    // -------------------------------------------------------------
+    // UI
+    // -------------------------------------------------------------
+    void UpdateDashUI()
+    {
+        if (dashUI == null) return;
+
+        if (dashCooldownTimer > 0)
+            dashUI.SetCooldown(dashCooldownTimer);
+        else
+            dashUI.SetReady();
     }
 }
