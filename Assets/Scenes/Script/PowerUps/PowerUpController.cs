@@ -4,12 +4,20 @@ using System.Collections;
 
 public class PowerUpController : MonoBehaviour
 {
+    [Header("UI (Opcional - depende da cena)")]
     public TextMeshProUGUI powerUpText;
 
     private Coroutine powerUpCoroutine;
 
     public void ActivateDamageBoostUI(float duration)
     {
+        // Segurança: se não houver UI nesta cena, não faz nada
+        if (powerUpText == null)
+        {
+            Debug.Log("PowerUp apanhado (Cena sem UI)");
+            return;
+        }
+
         if (powerUpCoroutine != null)
             StopCoroutine(powerUpCoroutine);
 
