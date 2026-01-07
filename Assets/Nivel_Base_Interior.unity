@@ -4395,6 +4395,28 @@ PrefabInstance:
     m_AddedGameObjects: []
     m_AddedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: 116c11b41e9d10142a22922301f58357, type: 3}
+--- !u!114 &215238395 stripped
+MonoBehaviour:
+  m_CorrespondingSourceObject: {fileID: 4648890233596670857, guid: 116c11b41e9d10142a22922301f58357, type: 3}
+  m_PrefabInstance: {fileID: 215238394}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 0
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: f4688fdb7df04437aeb418b961361dc5, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Unity.TextMeshPro::TMPro.TextMeshProUGUI
+--- !u!114 &215238396 stripped
+MonoBehaviour:
+  m_CorrespondingSourceObject: {fileID: 7346703201299493009, guid: 116c11b41e9d10142a22922301f58357, type: 3}
+  m_PrefabInstance: {fileID: 215238394}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: f4688fdb7df04437aeb418b961361dc5, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Unity.TextMeshPro::TMPro.TextMeshProUGUI
 --- !u!1001 &216587430
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -36863,6 +36885,14 @@ PrefabInstance:
       propertyPath: 'barrasStamina.Array.data[2]'
       value: 
       objectReference: {fileID: 1216649802}
+    - target: {fileID: 9138125886649369874, guid: 8621fe53bba263f4daca54182b5798ae, type: 3}
+      propertyPath: ammoText
+      value: 
+      objectReference: {fileID: 215238396}
+    - target: {fileID: 9138125886649369874, guid: 8621fe53bba263f4daca54182b5798ae, type: 3}
+      propertyPath: reloadText
+      value: 
+      objectReference: {fileID: 215238395}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
